@@ -2,7 +2,6 @@ import torch
 from models.graphsgpt.modeling_graphsgpt import GraphsGPTForCausalLM
 from data.tokenizer import GraphsGPTTokenizer
 from utils.operations.operation_tensor import move_tensors_to_device
-from utils.operations.operation_list import split_list_with_yield
 from typing import List, Optional
 import numpy as np
 from tqdm import tqdm
@@ -54,8 +53,9 @@ def encode(smiles: List[str]) -> np.ndarray:
         raise RuntimeError("Service is not setup, call 'setup' before 'encode'.")
     outputs = []
     with torch.no_grad():
-        for batched_smiles in tqdm(split_list_with_yield(smiles, State.batch_size), f"Encoding with {State.model_name}"):
-            inputs = batch_encode(State.tokenizer, batched_smiles)
+        for i in tqdm(range(0, len(smiles), State.batch_size), f"Encoding with {State.model_name}"):
+            smiles_batch = smiles[i:i+State.batch_size]
+            inputs = batch_encode(State.tokenizer, smiles_batch)
             move_tensors_to_device(inputs, State.device)
 
             fingerprint_tokens = State.model.encode_to_fingerprints(**inputs)  # (batch_size, num_fingerprints, hidden_dim)

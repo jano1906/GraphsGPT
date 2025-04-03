@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: graphsgpt
+Version: 1.0
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Dynamic: classifier
