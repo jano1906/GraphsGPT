@@ -6,6 +6,24 @@ from utils.operations.operation_list import split_list_with_yield
 from typing import List, Optional
 import numpy as np
 from tqdm import tqdm
+from typing import Dict, List, Union
+from rdkit import Chem
+
+def batch_encode(tokenizer: GraphsGPTTokenizer, smiles_or_mol_list: List[Union[str, Chem.Mol]]) -> Union[Dict[str, torch.LongTensor], Dict[str, List[List]]]:
+    batched_tokens = []
+    for smiles_or_mol in smiles_or_mol_list:
+        result = tokenizer.encode(smiles_or_mol, return_tensors="pt")
+        if result is None:
+            result = {
+                "input_ids": torch.tensor([], dtype=torch.long),
+                "graph_position_ids_1": torch.tensor([], dtype=torch.long),
+                "graph_position_ids_2": torch.tensor([], dtype=torch.long),
+                "identifier_ids": torch.tensor([], dtype=torch.bool),}
+        batched_tokens.append(result)
+        
+    batched_tokens = tokenizer._pad_encoded_tensor(batched_tokens)
+    return batched_tokens
+
 
 class State:
     model: Optional[GraphsGPTForCausalLM] = None
@@ -37,7 +55,7 @@ def encode(smiles: List[str]) -> np.ndarray:
     outputs = []
     with torch.no_grad():
         for batched_smiles in tqdm(split_list_with_yield(smiles, State.batch_size), f"Encoding with {State.model_name}"):
-            inputs = State.tokenizer.batch_encode(batched_smiles, return_tensors="pt")
+            inputs = batch_encode(State.tokenizer, batched_smiles)
             move_tensors_to_device(inputs, State.device)
 
             fingerprint_tokens = State.model.encode_to_fingerprints(**inputs)  # (batch_size, num_fingerprints, hidden_dim)
