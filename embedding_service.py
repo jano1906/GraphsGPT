@@ -5,7 +5,7 @@ from utils.operations.operation_tensor import move_tensors_to_device
 from typing import List, Optional
 import numpy as np
 from tqdm import tqdm
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Literal
 from rdkit import Chem
 
 HF_MODEL_NAMES = {
@@ -41,7 +41,7 @@ class State:
     initialized: bool = False
 
 
-def setup(model_name: str, device: str, batch_size: int) -> None:
+def setup(model_name: str, device: Literal["cpu", "cuda"], batch_size: int) -> None:
     State.model = GraphsGPTForCausalLM.from_pretrained(HF_MODEL_NAMES[model_name])
     State.model.to(device)
     State.model.eval()
