@@ -63,8 +63,12 @@ def encode(smiles: List[str]) -> np.ndarray:
             smiles_batch = smiles[i:i+State.batch_size]
             inputs = batch_encode(State.tokenizer, smiles_batch)
             move_tensors_to_device(inputs, State.device)
-
-            fingerprint_tokens = State.model.encode_to_fingerprints(**inputs)  # (batch_size, num_fingerprints, hidden_dim)
+            try:
+                fingerprint_tokens = State.model.encode_to_fingerprints(**inputs)  # (batch_size, num_fingerprints, hidden_dim)
+            except Exception as E:
+                print(f"Encoding failed: {E}")
+                fingerprint_tokens = torch.zeros(State.batch_size, State.model.config.num_fingerprints, State.model.config.hidden_size)
+                
             outputs.append(fingerprint_tokens.mean(dim=-2))
     outputs = torch.concat(outputs)
     outputs = outputs.cpu().numpy()
