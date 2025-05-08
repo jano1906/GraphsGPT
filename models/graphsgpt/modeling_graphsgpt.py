@@ -264,6 +264,8 @@ class GraphPositionStableEmbedding(nn.Module):
         if graph_position_features is None:
             batch_size, graph_seq_len = identifier_ids.shape  # also the shape of "graph_position_ids_1" and "graph_position_ids_2"
             max_node_cnt = int(torch.max(torch.sum(identifier_ids.clone(), dim=1)).item())
+            if max_node_cnt > self.feature_dim:
+                raise ValueError(f"{max_node_cnt=} > {self.feature_dim=}")
 
             # (batch_size, max_node_cnt, position_feature_size)
             if orthonormal_features is None:
