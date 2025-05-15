@@ -41,7 +41,7 @@ class State:
     initialized: bool = False
 
 
-def setup(model_name: str, device: Literal["cpu", "cuda"], batch_size: int) -> None:
+def setup(model_name: str, device: Literal["cpu", "cuda"], batch_size: int):
     State.model = GraphsGPTForCausalLM.from_pretrained(HF_MODEL_NAMES[model_name])
     State.model.to(device)
     State.model.eval()
@@ -54,9 +54,13 @@ def setup(model_name: str, device: Literal["cpu", "cuda"], batch_size: int) -> N
     
     State.initialized = True
 
-def encode(smiles: List[str]) -> np.ndarray:
+def encode(input_file: str, output_file: str):
+    with open(input_file, "r") as f:
+        smiles = f.readlines()
+
     if not State.initialized:
         raise RuntimeError("Service is not setup, call 'setup' before 'encode'.")
+    
     outputs = []
     with torch.no_grad():
         for i in tqdm(range(0, len(smiles), State.batch_size), f"Encoding with {State.model_name}"):
@@ -69,7 +73,8 @@ def encode(smiles: List[str]) -> np.ndarray:
                 print(f"Encoding failed: {E}")
                 fingerprint_tokens = torch.zeros(State.batch_size, State.model.config.num_fingerprints, State.model.config.hidden_size, device=State.device)
                 
-            outputs.append(fingerprint_tokens.mean(dim=-2))
+            outputs.append(fingerprint_tokens.mean(dim=-2).cpu())
     outputs = torch.concat(outputs)
-    outputs = outputs.cpu().numpy()
-    return outputs
+    outputs = outputs.numpy()
+    with open(output_file, "wb") as f:
+        np.save(f, outputs)
